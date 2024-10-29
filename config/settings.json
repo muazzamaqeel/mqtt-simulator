@@ -3,8 +3,9 @@
     "BROKER_PORT": 1883,
     "TOPICS": [
         {
-            "TYPE": "single",
-            "PREFIX": "Pacifier/1/ppg",
+            "TYPE": "list",
+            "PREFIX": "Pacifier",
+            "LIST": ["1/ppg", "1/imu", "2/ppg", "2/imu", "3/ppg", "3/imu", "4/ppg", "4/imu", "5/ppg", "5/imu"],
             "TIME_INTERVAL": 1,
             "DATA": [
                 {
@@ -41,14 +42,7 @@
                     "MIN_VALUE": -0.03,
                     "MAX_VALUE": 0.03,
                     "MAX_STEP": 0.01
-                }
-            ]
-        },
-        {
-            "TYPE": "single",
-            "PREFIX": "Pacifier/1/imu",
-            "TIME_INTERVAL": 1,
-            "DATA": [
+                },
                 {
                     "NAME": "gyro_x",
                     "TYPE": "float",
