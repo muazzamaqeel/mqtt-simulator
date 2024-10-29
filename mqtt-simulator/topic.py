@@ -1,3 +1,4 @@
+import random
 import time
 import json
 import threading
@@ -58,17 +59,27 @@ class Topic(threading.Thread):
             time.sleep(self.client_settings.time_interval)
 
     def on_publish(self, client, userdata, result):
-        print(f'[{time.strftime("%H:%M:%S")}] Data published on: {self.topic_url}')
+        payload_str = ', '.join(f"{key}={value}" for key, value in self.payload.items())
+        print(f'[{time.strftime("%H:%M:%S")}] Data published on: {self.topic_url} {payload_str}')
+
 
     def generate_payload(self):
         payload = {}
         payload.update(self.topic_payload_root)
         has_data_active = False
-        for data in self.topic_data:
-            if data.is_active:
-                has_data_active = True
-                payload[data.name] = data.generate_value()
-        if not has_data_active:
-            self.disconnect()
-            return
-        return payload
+
+        # Customize payload structure based on the topic
+        if "ppg" in self.topic_url:
+            payload["heart_rate"] = random.randint(70, 80)
+            payload["oxygen"] = random.randint(96, 99)
+            payload["acc_x"] = round(random.uniform(-0.03, 0.03), 2)
+            payload["acc_y"] = round(random.uniform(-0.03, 0.03), 2)
+            payload["acc_z"] = round(random.uniform(-0.03, 0.03), 2)
+        elif "imu" in self.topic_url:
+            payload["gyro_x"] = round(random.uniform(-0.2, 0.2), 2)
+            payload["gyro_y"] = round(random.uniform(-0.2, 0.2), 2)
+            payload["gyro_z"] = round(random.uniform(-0.2, 0.2), 2)
+
+        has_data_active = True  # We always generate data in this case
+        return payload if has_data_active else None
+
