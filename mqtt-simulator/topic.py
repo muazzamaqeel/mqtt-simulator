@@ -68,7 +68,6 @@ class Topic(threading.Thread):
         payload.update(self.topic_payload_root)
         has_data_active = False
 
-        # Customize payload structure based on the topic
         if "ppg" in self.topic_url:
             payload["heart_rate"] = random.randint(70, 80)
             payload["oxygen"] = random.randint(96, 99)
@@ -80,6 +79,6 @@ class Topic(threading.Thread):
             payload["gyro_y"] = round(random.uniform(-0.2, 0.2), 2)
             payload["gyro_z"] = round(random.uniform(-0.2, 0.2), 2)
 
-        has_data_active = True  # We always generate data in this case
+        has_data_active = True
         return payload if has_data_active else None
 
