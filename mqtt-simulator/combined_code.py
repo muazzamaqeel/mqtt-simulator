@@ -30,6 +30,7 @@ simulator.run()
 
 
 # --- Start of simulator.py ---
+# simulator.py
 import json
 from topic import Topic
 from data_classes import BrokerSettings, ClientSettings
@@ -49,7 +50,7 @@ class Simulator:
             clean=settings_dict.get('CLEAN_SESSION', default.clean),
             retain=settings_dict.get('RETAIN', default.retain),
             qos=settings_dict.get('QOS', default.qos),
-            time_interval= settings_dict.get('TIME_INTERVAL', default.time_interval)
+            time_interval=settings_dict.get('TIME_INTERVAL', default.time_interval)
         )
 
     def load_topics(self, settings_file):
@@ -62,44 +63,37 @@ class Simulator:
                 protocol=config.get('PROTOCOL_VERSION', 4) # mqtt.MQTTv311
             )
             broker_client_settings = self.read_client_settings(config, default=self.default_client_settings)
-            # read each configured topic
             for topic in config['TOPICS']:
                 topic_data = topic['DATA']
                 topic_payload_root = topic.get('PAYLOAD_ROOT', {})
                 topic_client_settings = self.read_client_settings(topic, default=broker_client_settings)
                 if topic['TYPE'] == 'single':
-                    # create single topic with format: /{PREFIX}
                     topic_url = topic['PREFIX']
                     topics.append(Topic(broker_settings, topic_url, topic_data, topic_payload_root, topic_client_settings))
                 elif topic['TYPE'] == 'multiple':
-                    # create multiple topics with format: /{PREFIX}/{id}
                     for id in range(topic['RANGE_START'], topic['RANGE_END']+1):
                         topic_url = topic['PREFIX'] + '/' + str(id)
                         topics.append(Topic(broker_settings, topic_url, topic_data, topic_payload_root, topic_client_settings))
                 elif topic['TYPE'] == 'list':
-                    # create multiple topics with format: /{PREFIX}/{item}
                     for item in topic['LIST']:
                         topic_url = topic['PREFIX'] + '/' + str(item)
                         topics.append(Topic(broker_settings, topic_url, topic_data, topic_payload_root, topic_client_settings))
         return topics
 
     def run(self):
-        for topic in self.topics:
-            print(f'Starting: {topic.topic_url} ...')
-            topic.start()
-        for topic in self.topics:
-            # workaround for Python 3.12
-            topic.join()
-
-    def stop(self):
-        for topic in self.topics:
-            print(f'Stopping: {topic.topic_url} ...')
-            topic.stop()
+        while True:
+            for topic in self.topics:
+                print(f'Starting: {topic.topic_url} ...')
+                topic.start()
+            for topic in self.topics:
+                topic.join()
 
 # --- End of simulator.py ---
 
 
 # --- Start of topic.py ---
+# topic.py
+import random
 import time
 import json
 import threading
@@ -110,15 +104,11 @@ from topic_data import TopicDataNumber, TopicDataBool, TopicDataRawValue, TopicD
 class Topic(threading.Thread):
     def __init__(self, broker_settings: BrokerSettings, topic_url: str, topic_data: list[object], topic_payload_root: object, client_settings: ClientSettings):
         threading.Thread.__init__(self)
-
         self.broker_settings = broker_settings
-
         self.topic_url = topic_url
         self.topic_data = self.load_topic_data(topic_data)
         self.topic_payload_root = topic_payload_root
-
         self.client_settings = client_settings
-
         self.loop = False
         self.client = None
         self.payload = None
@@ -155,25 +145,37 @@ class Topic(threading.Thread):
     def run(self):
         self.connect()
         while self.loop:
-            self.payload = self.generate_payload()
-            self.client.publish(topic=self.topic_url, payload=json.dumps(self.payload), qos=self.client_settings.qos, retain=self.client_settings.retain)
+            try:
+                self.payload = self.generate_payload()
+                self.client.publish(topic=self.topic_url, payload=json.dumps(self.payload), qos=self.client_settings.qos, retain=self.client_settings.retain)
+            except (mqtt.MQTTException, ConnectionError) as e:
+                print(f"Connection error on topic {self.topic_url}: {e}. Attempting to reconnect...")
+                time.sleep(5)
+                self.connect()  # Try to reconnect
             time.sleep(self.client_settings.time_interval)
 
     def on_publish(self, client, userdata, result):
-        print(f'[{time.strftime("%H:%M:%S")}] Data published on: {self.topic_url}')
+        payload_str = ', '.join(f"{key}={value}" for key, value in self.payload.items())
+        print(f'[{time.strftime("%H:%M:%S")}] Data published on: {self.topic_url} {payload_str}')
 
     def generate_payload(self):
         payload = {}
         payload.update(self.topic_payload_root)
         has_data_active = False
-        for data in self.topic_data:
-            if data.is_active:
-                has_data_active = True
-                payload[data.name] = data.generate_value()
-        if not has_data_active:
-            self.disconnect()
-            return
-        return payload
+
+        if "ppg" in self.topic_url:
+            payload["heart_rate"] = random.randint(70, 80)
+            payload["oxygen"] = random.randint(96, 99)
+            payload["acc_x"] = round(random.uniform(-0.03, 0.03), 2)
+            payload["acc_y"] = round(random.uniform(-0.03, 0.03), 2)
+            payload["acc_z"] = round(random.uniform(-0.03, 0.03), 2)
+        elif "imu" in self.topic_url:
+            payload["gyro_x"] = round(random.uniform(-0.2, 0.2), 2)
+            payload["gyro_y"] = round(random.uniform(-0.2, 0.2), 2)
+            payload["gyro_z"] = round(random.uniform(-0.2, 0.2), 2)
+
+        has_data_active = True
+        return payload if has_data_active else None
 
 # --- End of topic.py ---
 
@@ -360,6 +362,7 @@ class TopicDataNumber(TopicData):
 
 
 # --- Start of topic_data_raw_value.py ---
+# topic_data_raw_value.py
 from .topic_data import TopicData
 
 class TopicDataRawValue(TopicData):
@@ -377,20 +380,18 @@ class TopicDataRawValue(TopicData):
         if self.raw_values_index <= end_index:
             return self.get_current_value()
         elif self.raw_values_index > end_index and self.data.get('RESTART_ON_END', False):
+            self.raw_values_index = self.data.get('INDEX_START', 0)
             return self.generate_initial_value()
         else:
-            # changing to not active, if all data within the topic is not active we can disconnect the topic
             self.is_active = False
 
     def get_current_value(self):
         current_value_for_index = self.data['VALUES'][self.raw_values_index]
         if 'VALUE_DEFAULT' in self.data:
-            # raw_value needs to be of type object
             value = {}
             value.update(self.data.get('VALUE_DEFAULT', {}))
             value.update(current_value_for_index)
             return value
-        # raw_value can be of any type
         return current_value_for_index
 
 # --- End of topic_data_raw_value.py ---

@@ -1,1 +1,16 @@
 paho-mqtt==1.5.0
+
+
+
+
+Submitting documentation source code - Would be the weekened afterwards
+
+
+Professor will send a meesage next week about 
+
+
+ppg 4 values
+imu 9 values
+
+
+
