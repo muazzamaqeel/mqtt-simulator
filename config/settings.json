@@ -5,7 +5,16 @@
         {
             "TYPE": "list",
             "PREFIX": "Pacifier",
-            "LIST": ["1/ppg", "1/imu", "2/ppg", "2/imu", "3/ppg", "3/imu", "4/ppg", "4/imu", "5/ppg", "5/imu"],
+            "LIST": [
+                "1/ppg", "1/imu",
+                "2/ppg", "2/imu",
+                "3/ppg", "3/imu",
+                "4/ppg", "4/imu",
+                "5/ppg", "5/imu",
+                "6/ppg", "6/imu",
+                "7/ppg", "7/imu",
+                "8/ppg", "8/imu"
+            ],
             "TIME_INTERVAL": 1,
             "DATA": [
                 {

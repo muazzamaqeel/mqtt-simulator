@@ -163,19 +163,29 @@ class Topic(threading.Thread):
         payload.update(self.topic_payload_root)
         has_data_active = False
 
+        # Populate payload based on topic type
         if "ppg" in self.topic_url:
-            payload["heart_rate"] = random.randint(70, 80)
-            payload["oxygen"] = random.randint(96, 99)
+            # Pacifier fields for 'ppg' sensor type
+            payload["led1"] = random.randint(100, 110)  # Simulate LED values within a specific range
+            payload["led2"] = random.randint(100, 110)
+            payload["led3"] = random.randint(100, 110)
+            payload["temperature"] = round(random.uniform(36.5, 37.5), 1)  # Example temperature range
+
+        elif "imu" in self.topic_url:
+            # Pacifier fields for 'imu' sensor type with only accelerometer, gyroscope, and magnetometer
             payload["acc_x"] = round(random.uniform(-0.03, 0.03), 2)
             payload["acc_y"] = round(random.uniform(-0.03, 0.03), 2)
             payload["acc_z"] = round(random.uniform(-0.03, 0.03), 2)
-        elif "imu" in self.topic_url:
             payload["gyro_x"] = round(random.uniform(-0.2, 0.2), 2)
             payload["gyro_y"] = round(random.uniform(-0.2, 0.2), 2)
             payload["gyro_z"] = round(random.uniform(-0.2, 0.2), 2)
+            payload["mag_x"] = round(random.uniform(-0.05, 0.05), 2)
+            payload["mag_y"] = round(random.uniform(-0.05, 0.05), 2)
+            payload["mag_z"] = round(random.uniform(-0.05, 0.05), 2)
 
         has_data_active = True
         return payload if has_data_active else None
+
 
 # --- End of topic.py ---
 
