@@ -72,9 +72,9 @@ class Topic(threading.Thread):
         # Populate payload based on topic type
         if "ppg" in self.topic_url:
             # Pacifier fields for 'ppg' sensor type
-            payload["led1"] = random.randint(100, 110)  # Simulate LED values within a specific range
-            payload["led2"] = random.randint(100, 110)
-            payload["led3"] = random.randint(100, 110)
+            payload["led_1"] = random.randint(100, 110)  # Simulate LED values within a specific range
+            payload["led_2"] = random.randint(100, 110)
+            payload["led_3"] = random.randint(100, 110)
             payload["temperature"] = round(random.uniform(36.5, 37.5), 1)  # Example temperature range
 
         elif "imu" in self.topic_url:
