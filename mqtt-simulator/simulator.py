@@ -8,7 +8,7 @@ class Simulator:
             clean=True,
             retain=False,
             qos=2,
-            time_interval=10
+            time_interval=5
         )
         self.settings_file = settings_file
         self.topics = []

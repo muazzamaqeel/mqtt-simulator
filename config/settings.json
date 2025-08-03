@@ -15,7 +15,7 @@
                 "7/ppg", "7/imu",
                 "8/ppg", "8/imu"
             ],
-            "TIME_INTERVAL": 1,
+            "TIME_INTERVAL": 0.01,
             "DATA": [
                 {
                     "NAME": "heart_rate",
